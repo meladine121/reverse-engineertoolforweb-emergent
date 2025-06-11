@@ -78,6 +78,189 @@ class AnalysisResult(BaseModel):
     ai_analysis: str
     security_observations: List[str]
 
+@app.post("/api/live-session")
+async def handle_live_session(request: LiveSessionEvent):
+    """Handle live monitoring data from Chrome extension"""
+    try:
+        session_id = request.sessionId
+        
+        # Get or create session
+        if session_id not in live_sessions:
+            live_sessions[session_id] = {
+                "id": str(uuid.uuid4()),
+                "sessionId": session_id,
+                "url": request.url,
+                "hostname": request.hostname,
+                "startTime": datetime.utcnow(),
+                "events": [],
+                "status": "active"
+            }
+        
+        # Add event to session
+        live_sessions[session_id]["events"].append(request.event)
+        
+        # Store in database
+        await db.live_sessions.update_one(
+            {"sessionId": session_id},
+            {
+                "$set": {
+                    "id": live_sessions[session_id]["id"],
+                    "sessionId": session_id,
+                    "url": request.url,
+                    "hostname": request.hostname,
+                    "startTime": live_sessions[session_id]["startTime"],
+                    "status": "active",
+                    "lastUpdate": datetime.utcnow()
+                },
+                "$push": {"events": request.event}
+            },
+            upsert=True
+        )
+        
+        # Broadcast to connected websockets
+        await broadcast_to_websockets({
+            "type": "live_event",
+            "sessionId": session_id,
+            "event": request.event
+        })
+        
+        return {"status": "success", "sessionId": session_id}
+        
+    except Exception as e:
+        logger.error(f"Live session error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Live session error: {str(e)}")
+
+@app.post("/api/ai-insight")
+async def get_ai_insight(request: AIInsightRequest):
+    """Get AI insights for live monitoring events"""
+    try:
+        # Initialize OpenRouter client
+        openrouter_client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=request.openrouter_api_key
+        )
+        
+        # Analyze recent events
+        events_summary = analyze_events_for_ai(request.events)
+        
+        insight_prompt = f"""
+You are a web development debugging assistant. Analyze these recent events from a live monitoring session:
+
+{json.dumps(events_summary, indent=2)}
+
+Provide a brief, actionable insight (max 100 words) focusing on:
+1. What might be wrong
+2. Quick debugging tip
+3. Potential impact
+
+Be concise and practical for a developer actively testing their application.
+"""
+
+        response = openrouter_client.chat.completions.create(
+            model="google/gemini-2.5-flash-preview-05-20",
+            messages=[{"role": "user", "content": insight_prompt}],
+            max_tokens=150,
+            temperature=0.7
+        )
+        
+        insight = response.choices[0].message.content
+        
+        return {
+            "sessionId": request.sessionId,
+            "message": insight,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"AI insight error: {str(e)}")
+        return {
+            "sessionId": request.sessionId,
+            "message": f"AI analysis failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+
+def analyze_events_for_ai(events):
+    """Analyze events to create a summary for AI"""
+    summary = {
+        "total_events": len(events),
+        "event_types": {},
+        "errors": [],
+        "slow_requests": [],
+        "recent_patterns": []
+    }
+    
+    for event in events[-10:]:  # Last 10 events
+        event_type = event.get("type", "unknown")
+        summary["event_types"][event_type] = summary["event_types"].get(event_type, 0) + 1
+        
+        if event_type == "error":
+            summary["errors"].append({
+                "message": event.get("message", ""),
+                "timestamp": event.get("timestamp")
+            })
+        elif event_type == "network" and event.get("status", 0) >= 400:
+            summary["errors"].append({
+                "message": f"HTTP {event.get('status')} on {event.get('url')}",
+                "timestamp": event.get("timestamp")
+            })
+        elif event_type == "network" and event.get("duration", 0) > 3000:
+            summary["slow_requests"].append({
+                "url": event.get("url"),
+                "duration": event.get("duration"),
+                "timestamp": event.get("timestamp")
+            })
+    
+    return summary
+
+@app.get("/api/live-sessions")
+async def get_live_sessions():
+    """Get all active live sessions"""
+    try:
+        sessions = await db.live_sessions.find({"status": "active"}).sort("startTime", -1).to_list(50)
+        serialized_sessions = [serialize_mongo_doc(session) for session in sessions]
+        return serialized_sessions
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch live sessions: {str(e)}")
+
+@app.get("/api/live-sessions/{session_id}")
+async def get_live_session(session_id: str):
+    """Get specific live session data"""
+    try:
+        session = await db.live_sessions.find_one({"sessionId": session_id})
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return serialize_mongo_doc(session)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch session: {str(e)}")
+
+@app.websocket("/ws/live-monitoring")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time updates"""
+    await websocket.accept()
+    websocket_connections.append(websocket)
+    
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Handle any incoming websocket messages if needed
+    except WebSocketDisconnect:
+        websocket_connections.remove(websocket)
+
+async def broadcast_to_websockets(message):
+    """Broadcast message to all connected websockets"""
+    if websocket_connections:
+        disconnected = []
+        for websocket in websocket_connections:
+            try:
+                await websocket.send_text(json.dumps(message))
+            except:
+                disconnected.append(websocket)
+        
+        # Remove disconnected websockets
+        for ws in disconnected:
+            if ws in websocket_connections:
+                websocket_connections.remove(ws)
+
 @app.post("/api/analyze")
 async def analyze_website(request: AnalysisRequest):
     """Main endpoint to analyze a website"""
