@@ -42,6 +42,17 @@ openrouter_client = None
 live_sessions = {}
 websocket_connections = []
 
+class LiveSessionEvent(BaseModel):
+    sessionId: str
+    url: str
+    hostname: str
+    event: Dict[str, Any]
+
+class AIInsightRequest(BaseModel):
+    sessionId: str
+    openrouter_api_key: str
+    events: List[Dict[str, Any]]
+
 class AnalysisRequest(BaseModel):
     url: HttpUrl
     openrouter_api_key: str
