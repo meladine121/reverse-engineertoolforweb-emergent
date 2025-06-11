@@ -362,12 +362,29 @@ Keep the analysis technical but accessible, focusing on actionable insights.
         logger.error(f"AI analysis failed: {e}")
         return f"AI analysis failed: {str(e)}. Raw data analysis shows {len(browser_data.get('network_requests', []))} network requests, {len(browser_data.get('api_endpoints', []))} API endpoints discovered, and {len(browser_data.get('tech_stack', []))} technologies identified."
 
+def serialize_mongo_doc(doc):
+    """Convert MongoDB document to JSON serializable format"""
+    if doc is None:
+        return None
+    
+    # Convert ObjectId to string
+    if '_id' in doc:
+        doc['_id'] = str(doc['_id'])
+    
+    # Handle datetime objects
+    if 'timestamp' in doc and hasattr(doc['timestamp'], 'isoformat'):
+        doc['timestamp'] = doc['timestamp'].isoformat()
+    
+    return doc
+
 @app.get("/api/analyses")
 async def get_analyses():
     """Get all previous analyses"""
     try:
         analyses = await db.analyses.find().sort("timestamp", -1).limit(50).to_list(50)
-        return analyses
+        # Serialize all documents
+        serialized_analyses = [serialize_mongo_doc(analysis) for analysis in analyses]
+        return serialized_analyses
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch analyses: {str(e)}")
 
@@ -378,7 +395,7 @@ async def get_analysis(analysis_id: str):
         analysis = await db.analyses.find_one({"id": analysis_id})
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis not found")
-        return analysis
+        return serialize_mongo_doc(analysis)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch analysis: {str(e)}")
 
