@@ -37,6 +37,18 @@ function App() {
     }
   };
 
+  const fetchLiveSessions = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/live-sessions`);
+      if (response.ok) {
+        const data = await response.json();
+        setLiveSessions(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch live sessions:', err);
+    }
+  };
+
   const analyzeWebsite = async (e) => {
     e.preventDefault();
     
