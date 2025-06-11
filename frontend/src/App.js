@@ -18,6 +18,11 @@ function App() {
 
   useEffect(() => {
     fetchPreviousAnalyses();
+    fetchLiveSessions();
+    
+    // Set up periodic refresh for live sessions
+    const interval = setInterval(fetchLiveSessions, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPreviousAnalyses = async () => {
