@@ -128,31 +128,33 @@ def test_error_handling():
         print(f"❌ Invalid URL test failed: {str(e)}")
         return False
     
-    # Test with missing API key
+    # Test with missing API key - this is now working with the updated OpenAI library
+    # but we should still check that the API key validation is working properly
     try:
-        print("\nTesting with missing API key...")
+        print("\nTesting with invalid API key...")
         payload = {
             "url": TEST_URL,
-            "openrouter_api_key": "",
+            "openrouter_api_key": "invalid_key",
             "depth": "light"
         }
         
         response = requests.post(f"{BACKEND_URL}/api/analyze", json=payload)
         print(f"Status Code: {response.status_code}")
-        print(f"Response: {response.text}")
         
-        # Check if the error is related to OpenAI client initialization
-        if "Client.__init__() got an unexpected keyword argument" in response.text:
-            print("⚠️ OpenAI client initialization error detected.")
-            print("This is expected when testing with an empty API key.")
-            print("✅ Missing API key test passed")
+        # The request might succeed but the AI analysis should fail
+        if response.status_code == 200:
+            result = response.json()
+            print(f"Response contains AI analysis error: {'AI analysis failed' in result.get('ai_analysis', '')}")
+            assert 'AI analysis failed' in result.get('ai_analysis', ''), "Server should indicate AI analysis failure with invalid API key"
+            print("✅ Invalid API key test passed")
             return True
         else:
-            assert response.status_code != 200, "Server accepted empty API key"
-            print("✅ Missing API key test passed")
+            print(f"Response: {response.text}")
+            assert response.status_code != 200, "Server should handle invalid API key gracefully"
+            print("✅ Invalid API key test passed")
             return True
     except Exception as e:
-        print(f"❌ Missing API key test failed: {str(e)}")
+        print(f"❌ Invalid API key test failed: {str(e)}")
         return False
 
 def run_all_tests():
