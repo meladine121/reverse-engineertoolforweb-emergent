@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 380px;
+      min-height: 500px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .header {
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .logo-icon {
+      font-size: 1.5rem;
+    }
+    
+    .logo-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    
+    .status {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+    
+    .controls {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .control-group {
+      margin-bottom: 16px;
+    }
+    
+    .control-label {
+      font-size: 0.85rem;
+      margin-bottom: 6px;
+      opacity: 0.9;
+      font-weight: 500;
+    }
+    
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .toggle-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle-switch.active {
+      background: #10b981;
+    }
+    
+    .toggle-slider {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+    
+    .toggle-switch.active .toggle-slider {
+      transform: translateX(20px);
+    }
+    
+    .input-group {
+      margin-bottom: 12px;
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      font-size: 0.85rem;
+    }
+    
+    .input-field::placeholder {
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.15);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+    }
+    
+    .btn-primary {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .btn-primary:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .stats {
+      padding: 16px 20px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .stat-item {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+    
+    .recent-activity {
+      margin-top: 16px;
+    }
+    
+    .activity-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      opacity: 0.9;
+    }
+    
+    .activity-list {
+      max-height: 120px;
+      overflow-y: auto;
+    }
+    
+    .activity-item {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.8rem;
+      border-left: 3px solid;
+    }
+    
+    .activity-item.error {
+      border-left-color: #ef4444;
+    }
+    
+    .activity-item.warning {
+      border-left-color: #f59e0b;
+    }
+    
+    .activity-item.success {
+      border-left-color: #10b981;
+    }
+    
+    .activity-item.info {
+      border-left-color: #3b82f6;
+    }
+    
+    .activity-time {
+      opacity: 0.7;
+      font-size: 0.7rem;
+    }
+    
+    .footer {
+      padding: 12px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+    }
+    
+    .footer-btn {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 0 4px;
+    }
+    
+    .footer-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top: 2px solid white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <span class="logo-icon">🔍</span>
+      <span class="logo-text">WebAnalyzer Live</span>
+    </div>
+    <div class="status" id="status">Ready to monitor</div>
+  </div>
+  
+  <div class="controls">
+    <div class="control-group">
+      <div class="toggle-container">
+        <span class="toggle-label">Live Monitoring</span>
+        <div class="toggle-switch" id="monitorToggle">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">AI Analysis</span>
+        <div class="toggle-switch active" id="aiToggle">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+      
+      <div class="toggle-container">
+        <span class="toggle-label">Notifications</span>
+        <div class="toggle-switch active" id="notificationToggle">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="input-group">
+      <div class="control-label">OpenRouter API Key</div>
+      <input type="password" class="input-field" id="apiKey" placeholder="sk-or-v1-...">
+    </div>
+    
+    <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+  </div>
+  
+  <div class="stats">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" id="requestCount">0</div>
+        <div class="stat-label">Requests</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="errorCount">0</div>
+        <div class="stat-label">Errors</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="warningCount">0</div>
+        <div class="stat-label">Warnings</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="sessionTime">0s</div>
+        <div class="stat-label">Session</div>
+      </div>
+    </div>
+    
+    <div class="recent-activity">
+      <div class="activity-title">Recent Activity</div>
+      <div class="activity-list" id="activityList">
+        <div class="activity-item info">
+          <div>Extension ready</div>
+          <div class="activity-time">Just now</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <button class="footer-btn" id="openDashboard">Open Dashboard</button>
+    <button class="footer-btn" id="clearSession">Clear Session</button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
