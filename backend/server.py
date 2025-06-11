@@ -364,7 +364,7 @@ Keep the analysis technical but accessible, focusing on actionable insights.
 """
 
         response = openrouter_client.chat.completions.create(
-            model="google/gemini-2.0-flash-thinking-001",
+            model="google/gemini-2.5-flash-preview-05-20",
             messages=[{"role": "user", "content": analysis_prompt}],
             max_tokens=2000,
             temperature=0.7
