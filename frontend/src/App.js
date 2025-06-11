@@ -11,6 +11,8 @@ function App() {
   const [previousAnalyses, setPreviousAnalyses] = useState([]);
   const [activeView, setActiveView] = useState('analyzer');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [liveSessions, setLiveSessions] = useState([]);
+  const [selectedLiveSession, setSelectedLiveSession] = useState(null);
 
   const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
