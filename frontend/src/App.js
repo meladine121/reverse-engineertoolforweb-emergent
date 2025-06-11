@@ -686,6 +686,13 @@ function App() {
             onClick={() => setActiveView('analyzer')}
           />
           <SidebarItem
+            icon="⚡"
+            label="Live Sessions"
+            view="live-sessions"
+            isActive={activeView === 'live-sessions' || activeView === 'live-session-detail'}
+            onClick={() => setActiveView('live-sessions')}
+          />
+          <SidebarItem
             icon="📈"
             label="History"
             view="history"
