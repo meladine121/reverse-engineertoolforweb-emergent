@@ -211,7 +211,18 @@ async def capture_website_data(target_url: str, depth: str = "medium") -> Dict[s
         await browser.close()
     
     return {
-        "network_requests": [NetworkRequest(**req).dict() for req in network_requests if all(k in req for k in ["url", "method"])],
+        "network_requests": [
+            {
+                "url": req.get("url", ""),
+                "method": req.get("method", "GET"),
+                "status": req.get("status", 0),
+                "response_type": req.get("response_type", ""),
+                "headers": req.get("headers", {}),
+                "response_size": req.get("response_size", 0)
+            }
+            for req in network_requests 
+            if req.get("url") and req.get("method")
+        ],
         "console_logs": [log["text"] for log in console_logs[:50]],  # Limit logs
         "page_info": page_info,
         "tech_stack": tech_stack,
