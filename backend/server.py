@@ -130,7 +130,10 @@ async def capture_website_data(target_url: str, depth: str = "medium") -> Dict[s
                     "url": request.url,
                     "method": request.method,
                     "headers": dict(request.headers),
-                    "resource_type": request.resource_type
+                    "resource_type": request.resource_type,
+                    "status": 0,  # Will be updated in response handler
+                    "response_type": "",  # Will be updated in response handler
+                    "response_size": 0  # Will be updated in response handler
                 })
             except Exception as e:
                 logger.warning(f"Failed to capture request: {e}")
@@ -152,7 +155,7 @@ async def capture_website_data(target_url: str, depth: str = "medium") -> Dict[s
                         req.update({
                             "status": response.status,
                             "response_type": response.headers.get("content-type", ""),
-                            "response_size": len(response.headers.get("content-length", "0"))
+                            "response_size": int(response.headers.get("content-length", "0")) if response.headers.get("content-length", "0").isdigit() else 0
                         })
                         break
                         
