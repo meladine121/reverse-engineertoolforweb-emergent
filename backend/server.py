@@ -46,9 +46,9 @@ class AnalysisRequest(BaseModel):
 class NetworkRequest(BaseModel):
     url: str
     method: str
-    status: int
-    response_type: str
-    headers: Dict[str, Any]
+    status: Optional[int] = 0
+    response_type: Optional[str] = ""
+    headers: Optional[Dict[str, Any]] = {}
     response_size: Optional[int] = 0
 
 class AnalysisResult(BaseModel):
