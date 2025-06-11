@@ -231,6 +231,205 @@ function App() {
     </div>
   );
 
+  const renderLiveSessionsView = () => (
+    <div className="live-sessions-view">
+      <div className="page-header">
+        <h1 className="page-title">⚡ Live Sessions</h1>
+        <p className="page-subtitle">Monitor active browser sessions in real-time</p>
+      </div>
+
+      <div className="live-sessions-container">
+        {liveSessions.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">📡</div>
+            <div className="empty-title">No Active Sessions</div>
+            <div className="empty-message">
+              Install the Chrome extension and start monitoring to see live sessions here
+            </div>
+            <button className="empty-cta" onClick={() => window.open('/chrome-extension', '_blank')}>
+              Get Chrome Extension
+            </button>
+          </div>
+        ) : (
+          <div className="live-sessions-grid">
+            {liveSessions.map((session) => (
+              <div
+                key={session.sessionId}
+                className="live-session-card"
+                onClick={() => loadLiveSession(session.sessionId)}
+              >
+                <div className="session-header">
+                  <div className="session-status">
+                    <div className="status-indicator active"></div>
+                    <span>LIVE</span>
+                  </div>
+                  <div className="session-time">
+                    {formatTimestamp(session.startTime)}
+                  </div>
+                </div>
+                
+                <div className="session-info">
+                  <div className="session-url">{session.hostname}</div>
+                  <div className="session-stats">
+                    <span>{session.events?.length || 0} events</span>
+                    <span>•</span>
+                    <span>{getSessionDuration(session.startTime)}</span>
+                  </div>
+                </div>
+                
+                <div className="session-preview">
+                  {getRecentEvents(session.events).map((event, index) => (
+                    <div key={index} className={`event-preview ${event.type}`}>
+                      {getEventDescription(event)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const loadLiveSession = async (sessionId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/live-sessions/${sessionId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedLiveSession(data);
+        setActiveView('live-session-detail');
+      }
+    } catch (err) {
+      setError('Failed to load live session');
+    }
+  };
+
+  const getSessionDuration = (startTime) => {
+    const start = new Date(startTime);
+    const now = new Date();
+    const diff = Math.floor((now - start) / 1000);
+    
+    if (diff < 60) return `${diff}s`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    return `${Math.floor(diff / 3600)}h`;
+  };
+
+  const getRecentEvents = (events) => {
+    if (!events || events.length === 0) return [];
+    return events.slice(-3).reverse();
+  };
+
+  const getEventDescription = (event) => {
+    switch (event.type) {
+      case 'network':
+        if (event.status >= 400) {
+          return `❌ ${event.method} ${event.url} (${event.status})`;
+        } else if (event.duration > 3000) {
+          return `⏱️ Slow ${event.method} ${event.duration}ms`;
+        }
+        return `✅ ${event.method} ${event.status}`;
+      case 'error':
+        return `🚨 ${event.message?.substring(0, 40)}...`;
+      case 'console':
+        if (event.level === 'error') return `🐛 Console error`;
+        if (event.level === 'warn') return `⚠️ Console warning`;
+        return `📝 Console ${event.level}`;
+      default:
+        return `📊 ${event.type}`;
+    }
+  };
+
+  const renderLiveSessionDetailView = () => (
+    <div className="live-session-detail-view">
+      <div className="session-detail-header">
+        <div className="session-detail-title-section">
+          <h1 className="page-title">⚡ Live Session Detail</h1>
+          <div className="session-detail-url">{selectedLiveSession?.hostname}</div>
+        </div>
+        <div className="session-detail-actions">
+          <button className="secondary-btn" onClick={() => setActiveView('live-sessions')}>
+            <span className="btn-icon">←</span>
+            Back to Sessions
+          </button>
+        </div>
+      </div>
+
+      <div className="session-detail-content">
+        <div className="session-overview-card">
+          <h3 className="card-title">
+            <span className="card-icon">📊</span>
+            Session Overview
+          </h3>
+          <div className="session-overview-stats">
+            <div className="stat-item">
+              <div className="stat-value">{selectedLiveSession?.events?.length || 0}</div>
+              <div className="stat-label">Total Events</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">
+                {selectedLiveSession?.events?.filter(e => e.type === 'error').length || 0}
+              </div>
+              <div className="stat-label">Errors</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">
+                {selectedLiveSession?.events?.filter(e => e.type === 'network').length || 0}
+              </div>
+              <div className="stat-label">Network Requests</div>
+            </div>
+            <div className="stat-item">
+              <div className="stat-value">
+                {getSessionDuration(selectedLiveSession?.startTime)}
+              </div>
+              <div className="stat-label">Duration</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="events-timeline-card">
+          <h3 className="card-title">
+            <span className="card-icon">📈</span>
+            Events Timeline
+          </h3>
+          <div className="events-timeline">
+            {selectedLiveSession?.events?.slice(-20).reverse().map((event, index) => (
+              <div key={index} className={`timeline-event ${event.type}`}>
+                <div className="event-time">
+                  {new Date(event.timestamp).toLocaleTimeString()}
+                </div>
+                <div className="event-content">
+                  <div className="event-type">{event.type.toUpperCase()}</div>
+                  <div className="event-details">
+                    {event.type === 'network' && (
+                      <>
+                        <span className="event-method">{event.method}</span>
+                        <span className="event-url">{event.url}</span>
+                        <span className={`event-status status-${Math.floor(event.status / 100)}`}>
+                          {event.status}
+                        </span>
+                        <span className="event-duration">{event.duration}ms</span>
+                      </>
+                    )}
+                    {event.type === 'console' && (
+                      <>
+                        <span className={`console-level ${event.level}`}>{event.level}</span>
+                        <span className="console-message">{event.message}</span>
+                      </>
+                    )}
+                    {event.type === 'error' && (
+                      <span className="error-message">{event.message}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderHistoryView = () => (
     <div className="history-view">
       <div className="page-header">
