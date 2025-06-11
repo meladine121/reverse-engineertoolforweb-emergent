@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from typing import List, Dict, Any, Optional
@@ -37,6 +37,10 @@ db = client.website_analyzer
 
 # OpenRouter client setup
 openrouter_client = None
+
+# Live session storage
+live_sessions = {}
+websocket_connections = []
 
 class AnalysisRequest(BaseModel):
     url: HttpUrl
